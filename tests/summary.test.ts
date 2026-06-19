@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { summarize, shouldFail } from "../src/analyze.js";
 import { renderMarkdown } from "../src/render.js";
@@ -28,3 +29,10 @@ test("renders markdown report", () => {
   assert.match(renderMarkdown(summary), /npm test/);
 });
 
+test("matches clean expected report fixture", () => {
+  const summary = summarize("examples/clean-runs.jsonl", [
+    { command: "npm test", exitCode: 0, durationMs: 100, stdout: "ok" },
+    { command: "npm run build", exitCode: 0, durationMs: 150, stdout: "ok" }
+  ], { requiredCommands: [], failOn: "error" });
+  assert.equal(renderMarkdown(summary), readFileSync("examples/expected-report.md", "utf8"));
+});
