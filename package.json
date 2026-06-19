@@ -1,0 +1,38 @@
+{
+  "name": "runledger-skill",
+  "version": "0.1.0",
+  "description": "Agent skill and CLI for turning command-run ledgers into verification handoffs.",
+  "type": "module",
+  "bin": {
+    "runledger-skill": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "SKILL.md",
+    "docs",
+    "examples",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test dist/tests/*.test.js",
+    "pretest": "npm run build",
+    "smoke": "npm run build && node dist/cli.js summarize examples/runs.jsonl --out /tmp/runledger-skill-smoke.md && test -s /tmp/runledger-skill-smoke.md",
+    "validate": "bash scripts/validate.sh"
+  },
+  "keywords": [
+    "agent-skill",
+    "verification",
+    "jsonl",
+    "run-ledger",
+    "release-readiness"
+  ],
+  "author": "Roger Chappel",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "typescript": "^5.5.3"
+  }
+}
+
