@@ -14,4 +14,3 @@ Recorded duration: 250ms
 ## Findings
 
 No findings.
-
