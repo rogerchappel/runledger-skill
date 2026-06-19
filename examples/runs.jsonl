@@ -1,0 +1,4 @@
+{"command":"npm test","cwd":"/repo","exitCode":0,"durationMs":1240,"stdout":"ok 12 tests","outputPath":"artifacts/test.log"}
+{"command":"npm run build","cwd":"/repo","exitCode":0,"durationMs":2310,"stdout":"build complete","outputPath":"artifacts/build.log"}
+{"command":"npm run smoke","cwd":"/repo","exitCode":1,"durationMs":410,"stderr":"missing fixture","outputPath":"artifacts/smoke.log","notes":"needs rerun after fixture fix"}
+
