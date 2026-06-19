@@ -3,6 +3,7 @@ import { writeFile } from "node:fs/promises";
 import { readLedger } from "./parser.js";
 import { renderJson, renderMarkdown } from "./render.js";
 import { shouldFail, summarize } from "./analyze.js";
+import { readConfig } from "./config.js";
 import type { Severity } from "./types.js";
 
 interface Args {
@@ -11,7 +12,8 @@ interface Args {
   out?: string;
   format: "markdown" | "json";
   require: string[];
-  failOn: Severity;
+  failOn?: Severity;
+  config?: string;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -20,8 +22,7 @@ function parseArgs(argv: string[]): Args {
     command: command === "summarize" || command === "check" ? command : "help",
     input,
     format: "markdown",
-    require: [],
-    failOn: "error"
+    require: []
   };
 
   for (let index = 0; index < rest.length; index += 1) {
@@ -30,6 +31,7 @@ function parseArgs(argv: string[]): Args {
     else if (arg === "--format") args.format = rest[++index] === "json" ? "json" : "markdown";
     else if (arg === "--require") args.require.push(rest[++index]);
     else if (arg === "--fail-on") args.failOn = parseSeverity(rest[++index]);
+    else if (arg === "--config") args.config = rest[++index];
     else throw new Error(`Unknown argument: ${arg}`);
   }
   return args;
@@ -45,7 +47,7 @@ function help(): string {
 
 Usage:
   runledger-skill summarize <runs.jsonl> [--out REPORT.md] [--format markdown|json]
-  runledger-skill check <runs.jsonl> [--require "npm test"] [--fail-on warning]
+  runledger-skill check <runs.jsonl> [--require "npm test"] [--fail-on warning] [--config .runledger-skill.json]
 `;
 }
 
@@ -58,9 +60,10 @@ async function main(): Promise<void> {
   }
 
   const records = await readLedger(args.input);
+  const config = await readConfig(args.config);
   const summary = summarize(args.input, records, {
-    requiredCommands: args.require,
-    failOn: args.failOn
+    requiredCommands: [...config.requiredCommands, ...args.require],
+    failOn: args.failOn ?? config.failOn
   });
   const output = args.format === "json" ? renderJson(summary) : renderMarkdown(summary);
 
@@ -70,7 +73,7 @@ async function main(): Promise<void> {
     process.stdout.write(output);
   }
 
-  if (args.command === "check" && shouldFail(summary.findings, args.failOn)) {
+  if (args.command === "check" && shouldFail(summary.findings, args.failOn ?? config.failOn)) {
     process.exitCode = 1;
   }
 }
@@ -79,4 +82,3 @@ main().catch((error: unknown) => {
   process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
   process.exitCode = 1;
 });
-
