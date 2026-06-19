@@ -4,7 +4,7 @@
   "description": "Agent skill and CLI for turning command-run ledgers into verification handoffs.",
   "type": "module",
   "bin": {
-    "runledger-skill": "./dist/cli.js"
+    "runledger-skill": "./dist/src/cli.js"
   },
   "files": [
     "dist",
@@ -18,7 +18,7 @@
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "node --test dist/tests/*.test.js",
     "pretest": "npm run build",
-    "smoke": "npm run build && node dist/cli.js summarize examples/runs.jsonl --out /tmp/runledger-skill-smoke.md && test -s /tmp/runledger-skill-smoke.md",
+    "smoke": "npm run build && node dist/src/cli.js summarize examples/runs.jsonl --out /tmp/runledger-skill-smoke.md && test -s /tmp/runledger-skill-smoke.md",
     "validate": "bash scripts/validate.sh"
   },
   "keywords": [
@@ -35,4 +35,3 @@
     "typescript": "^5.5.3"
   }
 }
-

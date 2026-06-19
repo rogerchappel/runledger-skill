@@ -7,8 +7,8 @@
 ```bash
 npm install
 npm run build
-node dist/cli.js summarize examples/runs.jsonl --out VERIFICATION.md
-node dist/cli.js check examples/clean-runs.jsonl --require "npm test" --require "npm run build" --fail-on warning
+node dist/src/cli.js summarize examples/runs.jsonl --out VERIFICATION.md
+node dist/src/cli.js check examples/clean-runs.jsonl --require "npm test" --require "npm run build" --fail-on warning
 ```
 
 ## CLI
@@ -54,4 +54,3 @@ npm run build
 npm run smoke
 bash scripts/validate.sh
 ```
-
