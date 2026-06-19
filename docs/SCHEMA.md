@@ -22,3 +22,14 @@
 | `outputPath` | string | Local path to a larger evidence artifact. |
 | `notes` | string | Human or agent notes. Secret-like values are redacted. |
 
+## Policy Config
+
+`--config` accepts a small JSON file:
+
+```json
+{
+  "requiredCommands": ["npm test", "npm run build"],
+  "failOn": "warning"
+}
+```
+
