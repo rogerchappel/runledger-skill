@@ -19,7 +19,9 @@
     "test": "node --test dist/tests/*.test.js",
     "pretest": "npm run build",
     "smoke": "npm run build && node dist/src/cli.js summarize examples/runs.jsonl --out /tmp/runledger-skill-smoke.md && test -s /tmp/runledger-skill-smoke.md",
-    "validate": "bash scripts/validate.sh"
+    "validate": "bash scripts/validate.sh",
+    "package:smoke": "npm pack --dry-run",
+    "release:check": "npm run check && npm test && npm run build && npm run smoke && npm run validate && npm run package:smoke"
   },
   "keywords": [
     "agent-skill",
@@ -33,5 +35,13 @@
   "devDependencies": {
     "@types/node": "^20.14.10",
     "typescript": "^5.5.3"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rogerchappel/runledger-skill.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rogerchappel/runledger-skill/issues"
+  },
+  "homepage": "https://github.com/rogerchappel/runledger-skill#readme"
 }
