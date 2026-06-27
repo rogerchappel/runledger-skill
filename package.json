@@ -14,13 +14,13 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && chmod 755 dist/src/cli.js",
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "node --test dist/tests/*.test.js",
     "pretest": "npm run build",
     "smoke": "npm run build && node dist/src/cli.js summarize examples/runs.jsonl --out /tmp/runledger-skill-smoke.md && test -s /tmp/runledger-skill-smoke.md",
     "validate": "bash scripts/validate.sh",
-    "package:smoke": "npm pack --dry-run",
+    "package:smoke": "node scripts/package-smoke.js",
     "release:check": "npm run check && npm test && npm run build && npm run smoke && npm run validate && npm run package:smoke"
   },
   "keywords": [
