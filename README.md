@@ -52,5 +52,11 @@ npm test
 npm run check
 npm run build
 npm run smoke
+npm run package:smoke
+npm run install:smoke
 bash scripts/validate.sh
+npm run release:check
 ```
+
+`npm run release:check` runs type checks, tests, the fixture-backed CLI smoke,
+validation, npm pack content assertions, and an installed-tarball CLI smoke.
