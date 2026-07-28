@@ -25,13 +25,27 @@ function parseArgs(argv: string[]): Args {
     require: []
   };
 
+  const optionValue = (option: string, index: number): string => {
+    const value = rest[index + 1];
+    if (!value || value.startsWith("--")) {
+      throw new Error(`Missing value for ${option}`);
+    }
+    return value;
+  };
+
   for (let index = 0; index < rest.length; index += 1) {
     const arg = rest[index];
-    if (arg === "--out") args.out = rest[++index];
-    else if (arg === "--format") args.format = rest[++index] === "json" ? "json" : "markdown";
-    else if (arg === "--require") args.require.push(rest[++index]);
+    if (arg === "--out") args.out = optionValue(arg, index++);
+    else if (arg === "--format") {
+      const format = optionValue(arg, index++);
+      if (format !== "markdown" && format !== "json") {
+        throw new Error(`Unsupported format: ${format}`);
+      }
+      args.format = format;
+    }
+    else if (arg === "--require") args.require.push(optionValue(arg, index++));
     else if (arg === "--fail-on") args.failOn = parseSeverity(rest[++index]);
-    else if (arg === "--config") args.config = rest[++index];
+    else if (arg === "--config") args.config = optionValue(arg, index++);
     else throw new Error(`Unknown argument: ${arg}`);
   }
   return args;
