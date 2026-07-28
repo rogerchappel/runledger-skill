@@ -30,12 +30,20 @@ function asRecord(value: unknown, line: number): RunRecord {
 export function parseJsonl(text: string): RunRecord[] {
   return text
     .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line, index) => asRecord(JSON.parse(line), index + 1));
+    .map((line, index) => ({ line: line.trim(), lineNumber: index + 1 }))
+    .filter(({ line }) => line !== "")
+    .map(({ line, lineNumber }) => {
+      let value: unknown;
+      try {
+        value = JSON.parse(line);
+      } catch (error: unknown) {
+        const detail = error instanceof Error ? `: ${error.message}` : "";
+        throw new Error(`Line ${lineNumber} contains malformed JSON${detail}`);
+      }
+      return asRecord(value, lineNumber);
+    });
 }
 
 export async function readLedger(path: string): Promise<RunRecord[]> {
   return parseJsonl(await readFile(path, "utf8"));
 }
-
