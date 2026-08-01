@@ -15,10 +15,13 @@ node dist/src/cli.js check examples/clean-runs.jsonl --require "npm test" --requ
 
 ```bash
 runledger-skill summarize <runs.jsonl> [--out REPORT.md] [--format markdown|json]
-runledger-skill check <runs.jsonl> [--require "npm test"] [--fail-on warning]
+runledger-skill check <runs.jsonl> [--require "npm test"] [--fail-on warning] [--config .runledger-skill.json]
 ```
 
 `summarize` renders a Markdown or JSON report. `check` applies the same analysis and exits non-zero when findings meet the threshold.
+The config file must contain `requiredCommands` as an array of non-empty strings
+and `failOn` as `info`, `warning`, or `error`. Invalid or malformed config files
+produce a nonzero exit before a report is written.
 
 ## JSONL Schema
 
