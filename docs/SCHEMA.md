@@ -33,3 +33,9 @@
 }
 ```
 
+Both fields are required. `requiredCommands` must be an array containing only
+non-empty strings. `failOn` must be one of `info`, `warning`, or `error` and
+sets the lowest finding severity that makes `check` exit nonzero. Malformed
+JSON and values outside this contract are reported as config errors; they are
+never replaced with defaults. When `--config` is omitted, the defaults are an
+empty required-command list and a failure threshold of `error`.

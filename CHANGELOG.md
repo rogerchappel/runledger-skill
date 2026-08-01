@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Config files now fail clearly on malformed JSON, invalid required-command
+  lists, and unsupported severity thresholds instead of silently using defaults.
 - Added asserted npm pack smoke coverage for release files and executable CLI
   bin metadata.
 - Added an installed-tarball CLI smoke to prove the published package can
