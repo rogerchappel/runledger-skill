@@ -13,6 +13,37 @@ test("rejects missing command", () => {
   assert.throws(() => parseJsonl('{"exitCode":0}\n'), /missing command/);
 });
 
+test("rejects invalid exit codes with physical line numbers", () => {
+  for (const exitCode of [0.5, -1]) {
+    assert.throws(
+      () => parseJsonl(`{"command":"npm test","exitCode":0}\n\n{"command":"npm test","exitCode":${exitCode}}\n`),
+      /Line 3 has invalid exitCode/
+    );
+  }
+});
+
+test("rejects invalid durations with physical line numbers", () => {
+  for (const durationMs of [-1, "1e309"]) {
+    assert.throws(
+      () => parseJsonl(`{"command":"npm test","exitCode":0}\n\n{"command":"npm test","exitCode":0,"durationMs":${durationMs}}\n`),
+      /Line 3 has invalid durationMs/
+    );
+  }
+});
+
+test("accepts zero and positive numeric values", () => {
+  const records = parseJsonl(
+    '{"command":"zero","exitCode":0,"durationMs":0}\n{"command":"positive","exitCode":2,"durationMs":1.5}\n'
+  );
+  assert.deepEqual(
+    records.map(({ exitCode, durationMs }) => ({ exitCode, durationMs })),
+    [
+      { exitCode: 0, durationMs: 0 },
+      { exitCode: 2, durationMs: 1.5 }
+    ]
+  );
+});
+
 test("preserves physical line numbers across blank lines", () => {
   assert.throws(
     () => parseJsonl('{"command":"npm test","exitCode":0}\n\n{"exitCode":0}\n'),
