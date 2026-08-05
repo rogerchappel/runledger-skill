@@ -1,4 +1,4 @@
-import { hasSecretLikeValue } from "./redact.js";
+import { hasSecretLikeValue, wasRedacted } from "./redact.js";
 import type { CheckOptions, Finding, RunRecord, Severity, Summary } from "./types.js";
 
 const SEVERITY_ORDER: Record<Severity, number> = {
@@ -43,7 +43,12 @@ export function summarize(source: string, records: RunRecord[], options: CheckOp
         command: record.command
       });
     }
-    if (hasSecretLikeValue(record.stdout) || hasSecretLikeValue(record.stderr) || hasSecretLikeValue(record.notes)) {
+    if (
+      wasRedacted(record) ||
+      hasSecretLikeValue(record.stdout) ||
+      hasSecretLikeValue(record.stderr) ||
+      hasSecretLikeValue(record.notes)
+    ) {
       findings.push({
         severity: "warning",
         code: "redaction-applied",
@@ -64,4 +69,3 @@ export function summarize(source: string, records: RunRecord[], options: CheckOp
     findings
   };
 }
-
