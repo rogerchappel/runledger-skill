@@ -7,7 +7,7 @@
 | Field | Type | Description |
 |---|---|---|
 | `command` | string | Exact command label from the ledger. |
-| `exitCode` | number | Process exit code. Zero is treated as passed. |
+| `exitCode` | number | Non-negative integer process exit code. Zero is treated as passed. |
 
 ## Optional Fields
 
@@ -16,7 +16,7 @@
 | `cwd` | string | Working directory where the command ran. |
 | `startedAt` | string | ISO timestamp for command start. |
 | `endedAt` | string | ISO timestamp for command end. |
-| `durationMs` | number | Duration in milliseconds. |
+| `durationMs` | number | Finite, non-negative duration in milliseconds. Fractional values are allowed. |
 | `stdout` | string | Short stdout evidence. Secret-like values are redacted. |
 | `stderr` | string | Short stderr evidence. Secret-like values are redacted. |
 | `outputPath` | string | Local path to a larger evidence artifact. |
