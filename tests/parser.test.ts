@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { parseJsonl } from "../src/parser.js";
+import { wasRedacted } from "../src/redact.js";
 
 test("parses JSONL run records", () => {
   const records = parseJsonl('{"command":"npm test","exitCode":0,"stdout":"ok"}\n');
@@ -61,4 +62,10 @@ test("reports the physical line containing malformed JSON", () => {
 test("redacts secret-like values while parsing", () => {
   const records = parseJsonl('{"command":"check","exitCode":0,"stdout":"token=abcdefghijklmnop"}\n');
   assert.equal(records[0].stdout, "token=[REDACTED]");
+  assert.equal(wasRedacted(records[0]), true);
+});
+
+test("does not mark clean records as redacted", () => {
+  const records = parseJsonl('{"command":"check","exitCode":0,"stdout":"clean output"}\n');
+  assert.equal(wasRedacted(records[0]), false);
 });
