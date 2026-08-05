@@ -13,13 +13,22 @@ function asRecord(value: unknown, line: number): RunRecord {
   if (typeof raw.exitCode !== "number") {
     throw new Error(`Line ${line} is missing numeric exitCode`);
   }
+  if (!Number.isInteger(raw.exitCode) || raw.exitCode < 0) {
+    throw new Error(`Line ${line} has invalid exitCode; expected a non-negative integer`);
+  }
+  if (
+    raw.durationMs !== undefined &&
+    (typeof raw.durationMs !== "number" || !Number.isFinite(raw.durationMs) || raw.durationMs < 0)
+  ) {
+    throw new Error(`Line ${line} has invalid durationMs; expected a finite non-negative number`);
+  }
   return {
     command: raw.command.trim(),
     cwd: typeof raw.cwd === "string" ? raw.cwd : undefined,
     exitCode: raw.exitCode,
     startedAt: typeof raw.startedAt === "string" ? raw.startedAt : undefined,
     endedAt: typeof raw.endedAt === "string" ? raw.endedAt : undefined,
-    durationMs: typeof raw.durationMs === "number" ? raw.durationMs : undefined,
+    durationMs: raw.durationMs,
     stdout: redact(typeof raw.stdout === "string" ? raw.stdout : undefined),
     stderr: redact(typeof raw.stderr === "string" ? raw.stderr : undefined),
     outputPath: typeof raw.outputPath === "string" ? raw.outputPath : undefined,
