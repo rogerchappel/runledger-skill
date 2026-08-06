@@ -5,6 +5,10 @@ const SECRET_PATTERNS = [
   /(token\s*[:=]\s*)[A-Za-z0-9._-]{12,}/gi
 ];
 
+const REDACTION_APPLIED = Symbol("redaction-applied");
+
+type RedactionTracked = { [REDACTION_APPLIED]?: true };
+
 export function redact(input: string | undefined): string | undefined {
   if (!input) return input;
   return SECRET_PATTERNS.reduce((value, pattern) => {
@@ -20,3 +24,11 @@ export function hasSecretLikeValue(input: string | undefined): boolean {
   });
 }
 
+export function markRedacted<T extends object>(value: T): T {
+  Object.defineProperty(value, REDACTION_APPLIED, { value: true });
+  return value;
+}
+
+export function wasRedacted(value: object): boolean {
+  return (value as RedactionTracked)[REDACTION_APPLIED] === true;
+}

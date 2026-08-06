@@ -51,3 +51,16 @@ test("a valid config enforces required commands", () => {
   const report = JSON.parse(result.stdout) as { findings: Array<{ message: string }> };
   assert.ok(report.findings.some((finding) => finding.message.includes("npm run missing")));
 });
+
+test("reports redaction without exposing the original value in JSON output", () => {
+  const directory = mkdtempSync(join(tmpdir(), "runledger-cli-test-"));
+  const ledger = join(directory, "runs.jsonl");
+  writeFileSync(ledger, '{"command":"deploy","exitCode":0,"stdout":"token=abcdefghijklmnop"}\n');
+
+  const result = run("summarize", ledger, "--format", "json");
+  assert.equal(result.status, 0);
+  assert.doesNotMatch(result.stdout, /abcdefghijklmnop/);
+  const report = JSON.parse(result.stdout) as { records: Array<{ stdout: string }>; findings: Array<{ code: string }> };
+  assert.equal(report.records[0].stdout, "token=[REDACTED]");
+  assert.equal(report.findings.filter(({ code }) => code === "redaction-applied").length, 1);
+});
