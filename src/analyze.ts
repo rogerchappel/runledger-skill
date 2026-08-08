@@ -27,11 +27,13 @@ export function summarize(source: string, records: RunRecord[], options: CheckOp
   }
 
   for (const record of records) {
-    if (record.exitCode !== 0) {
+    if (record.exitCode !== 0 || record.signal) {
       findings.push({
         severity: "error",
         code: "command-failed",
-        message: `Command exited with ${record.exitCode}`,
+        message: record.exitCode === null
+          ? `Command terminated by signal ${record.signal}`
+          : `Command exited with ${record.exitCode}`,
         command: record.command
       });
     }
@@ -62,8 +64,8 @@ export function summarize(source: string, records: RunRecord[], options: CheckOp
     source,
     generatedAt: new Date(0).toISOString(),
     total: records.length,
-    passed: records.filter((record) => record.exitCode === 0).length,
-    failed: records.filter((record) => record.exitCode !== 0).length,
+    passed: records.filter((record) => record.exitCode === 0 && !record.signal).length,
+    failed: records.filter((record) => record.exitCode !== 0 || Boolean(record.signal)).length,
     durationMs: records.reduce((sum, record) => sum + (record.durationMs ?? 0), 0),
     records,
     findings

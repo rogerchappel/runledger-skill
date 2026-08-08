@@ -18,6 +18,9 @@ interface Args {
 
 function parseArgs(argv: string[]): Args {
   const [command = "help", input, ...rest] = argv;
+  if (command !== "summarize" && command !== "check" && command !== "help" && command !== "--help" && command !== "-h") {
+    throw new Error(`Unknown command: ${command}. Run runledger-skill --help for usage.`);
+  }
   const args: Args = {
     command: command === "summarize" || command === "check" ? command : "help",
     input,

@@ -31,7 +31,13 @@ Each line is one command run:
 {"command":"npm test","exitCode":0,"durationMs":1240,"stdout":"ok","outputPath":"artifacts/test.log"}
 ```
 
-Required fields are `command` and `exitCode`. Optional fields include `cwd`, `startedAt`, `endedAt`, `durationMs`, `stdout`, `stderr`, `outputPath`, and `notes`.
+The compact shape above and canonical `runledger.v1` records are accepted. In
+canonical records, `command` is an argv array such as `["npm", "test"]`; it is
+normalized deterministically to `npm test` for reports and `--require`
+matching. A numeric `exitCode` is passed only when it is zero. A null
+`exitCode` must have a non-empty `signal` and is reported as failed. See
+[`docs/SCHEMA.md`](docs/SCHEMA.md) for the full compatibility contract and the
+fixture in `tests/fixtures/runledger.v1.jsonl` for executable examples.
 
 ## Safety Model
 

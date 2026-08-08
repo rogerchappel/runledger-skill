@@ -16,7 +16,8 @@ export function renderMarkdown(summary: Summary): string {
 
   for (const record of summary.records) {
     const evidence = record.outputPath ?? record.stdout ?? record.stderr ?? "missing";
-    lines.push(`| \`${record.command}\` | ${record.exitCode} | ${record.durationMs ?? 0}ms | ${escapeCell(evidence)} |`);
+    const exit = record.exitCode === null ? `signal: ${record.signal}` : String(record.exitCode);
+    lines.push(`| \`${record.command}\` | ${exit} | ${record.durationMs ?? 0}ms | ${escapeCell(evidence)} |`);
   }
 
   lines.push("", "## Findings", "");
@@ -38,4 +39,3 @@ export function renderJson(summary: Summary): string {
 function escapeCell(value: string): string {
   return value.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
 }
-

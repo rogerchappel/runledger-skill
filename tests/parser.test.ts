@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { parseJsonl } from "../src/parser.js";
 import { wasRedacted } from "../src/redact.js";
@@ -8,6 +9,29 @@ test("parses JSONL run records", () => {
   assert.equal(records.length, 1);
   assert.equal(records[0].command, "npm test");
   assert.equal(records[0].exitCode, 0);
+});
+
+test("parses canonical runledger.v1 records and normalizes argv commands", () => {
+  const records = parseJsonl(readFileSync("tests/fixtures/runledger.v1.jsonl", "utf8"));
+  assert.equal(records[0].command, "node -e console.log('fixture ok')");
+  assert.equal(records[0].exitCode, 0);
+  assert.equal(records[0].signal, null);
+  assert.equal(records[1].command, "node -e process.kill(process.pid, 'SIGTERM')");
+  assert.equal(records[1].exitCode, null);
+  assert.equal(records[1].signal, "SIGTERM");
+});
+
+test("rejects malformed command arrays", () => {
+  for (const command of [[], ["npm", ""], ["npm", 1]]) {
+    assert.throws(() => parseJsonl(JSON.stringify({ command, exitCode: 0, signal: null })), /missing command/);
+  }
+});
+
+test("requires a signal when exitCode is null", () => {
+  assert.throws(
+    () => parseJsonl('{"command":["npm","test"],"exitCode":null,"signal":null}'),
+    /null exitCode requires a signal/
+  );
 });
 
 test("rejects missing command", () => {
