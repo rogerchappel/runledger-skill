@@ -3,7 +3,8 @@ export type Severity = "info" | "warning" | "error";
 export interface RunRecord {
   command: string;
   cwd?: string;
-  exitCode: number;
+  exitCode: number | null;
+  signal?: string | null;
   startedAt?: string;
   endedAt?: string;
   durationMs?: number;
@@ -36,4 +37,3 @@ export interface CheckOptions {
   failOn: Severity;
   maxAgeHours?: number;
 }
-

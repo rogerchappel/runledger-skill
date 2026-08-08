@@ -64,3 +64,20 @@ test("reports redaction without exposing the original value in JSON output", () 
   assert.equal(report.records[0].stdout, "token=[REDACTED]");
   assert.equal(report.findings.filter(({ code }) => code === "redaction-applied").length, 1);
 });
+
+test("rejects unknown commands with actionable guidance", () => {
+  const result = run("frobnicate");
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Unknown command: frobnicate/);
+  assert.match(result.stderr, /--help/);
+  assert.equal(result.stdout, "");
+});
+
+for (const helpCommand of [[], ["help"], ["--help"], ["-h"]]) {
+  test(`prints help successfully for ${helpCommand[0] ?? "no command"}`, () => {
+    const result = run(...helpCommand);
+    assert.equal(result.status, 0);
+    assert.match(result.stdout, /Usage:/);
+    assert.equal(result.stderr, "");
+  });
+}
