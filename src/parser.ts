@@ -7,14 +7,21 @@ function asRecord(value: unknown, line: number): RunRecord {
     throw new Error(`Line ${line} is not a JSON object`);
   }
   const raw = value as Record<string, unknown>;
-  if (typeof raw.command !== "string" || raw.command.trim() === "") {
+  const command = normalizeCommand(raw.command);
+  if (command === undefined) {
     throw new Error(`Line ${line} is missing command`);
   }
-  if (typeof raw.exitCode !== "number") {
-    throw new Error(`Line ${line} is missing numeric exitCode`);
+  if (raw.exitCode !== null && (!Number.isInteger(raw.exitCode) || (raw.exitCode as number) < 0)) {
+    throw new Error(`Line ${line} has invalid exitCode; expected null or a non-negative integer`);
   }
-  if (!Number.isInteger(raw.exitCode) || raw.exitCode < 0) {
-    throw new Error(`Line ${line} has invalid exitCode; expected a non-negative integer`);
+  if (raw.signal !== undefined && raw.signal !== null && (typeof raw.signal !== "string" || raw.signal.trim() === "")) {
+    throw new Error(`Line ${line} has invalid signal; expected null or a non-empty string`);
+  }
+  if (raw.exitCode === undefined) {
+    throw new Error(`Line ${line} is missing exitCode`);
+  }
+  if (raw.exitCode === null && (typeof raw.signal !== "string" || raw.signal.trim() === "")) {
+    throw new Error(`Line ${line} with null exitCode requires a signal`);
   }
   if (
     raw.durationMs !== undefined &&
@@ -26,9 +33,10 @@ function asRecord(value: unknown, line: number): RunRecord {
   const stderr = typeof raw.stderr === "string" ? raw.stderr : undefined;
   const notes = typeof raw.notes === "string" ? raw.notes : undefined;
   const record: RunRecord = {
-    command: raw.command.trim(),
+    command,
     cwd: typeof raw.cwd === "string" ? raw.cwd : undefined,
-    exitCode: raw.exitCode,
+    exitCode: raw.exitCode as number | null,
+    signal: typeof raw.signal === "string" ? raw.signal.trim() : raw.signal === null ? null : undefined,
     startedAt: typeof raw.startedAt === "string" ? raw.startedAt : undefined,
     endedAt: typeof raw.endedAt === "string" ? raw.endedAt : undefined,
     durationMs: raw.durationMs,
@@ -40,6 +48,14 @@ function asRecord(value: unknown, line: number): RunRecord {
   return hasSecretLikeValue(stdout) || hasSecretLikeValue(stderr) || hasSecretLikeValue(notes)
     ? markRedacted(record)
     : record;
+}
+
+function normalizeCommand(value: unknown): string | undefined {
+  if (typeof value === "string") return value.trim() || undefined;
+  if (!Array.isArray(value) || value.length === 0 || value.some((part) => typeof part !== "string" || part === "")) {
+    return undefined;
+  }
+  return value.join(" ");
 }
 
 export function parseJsonl(text: string): RunRecord[] {

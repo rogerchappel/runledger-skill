@@ -22,6 +22,20 @@ test("flags missing required commands", () => {
   assert.match(summary.findings[0].message, /Missing required command/);
 });
 
+test("matches normalized runledger.v1 commands and reports signal failures", () => {
+  const records = parseJsonl(readFileSync("tests/fixtures/runledger.v1.jsonl", "utf8"));
+  const summary = summarize("fixture", records, {
+    requiredCommands: ["node -e console.log('fixture ok')"],
+    failOn: "error"
+  });
+
+  assert.equal(summary.passed, 1);
+  assert.equal(summary.failed, 1);
+  assert.equal(summary.findings.some(({ code }) => code === "missing-required-command"), false);
+  assert.match(summary.findings.find(({ code }) => code === "command-failed")?.message ?? "", /SIGTERM/);
+  assert.match(renderMarkdown(summary), /signal: SIGTERM/);
+});
+
 test("renders markdown report", () => {
   const summary = summarize("fixture", [
     { command: "npm test", exitCode: 0, durationMs: 10, stdout: "ok" }
