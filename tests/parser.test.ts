@@ -21,6 +21,27 @@ test("parses canonical runledger.v1 records and normalizes argv commands", () =>
   assert.equal(records[1].signal, "SIGTERM");
 });
 
+test("rejects malformed canonical schema with a physical line number", () => {
+  assert.throws(
+    () => parseJsonl('{"command":"ok","exitCode":0}\n\n{"schema":"runledger.v2","command":["npm","test"],"exitCode":0}\n'),
+    /Line 3 is not a valid runledger\.v1 record/
+  );
+});
+
+test("rejects canonical genesis and chain mismatches with physical line numbers", () => {
+  const fixture = readFileSync("tests/fixtures/runledger.v1.jsonl", "utf8");
+  assert.throws(() => parseJsonl(fixture.replace(/"prevHash":"0{64}"/, '"prevHash":"bad"')), /Line 1 has prevHash mismatch/);
+  assert.throws(
+    () => parseJsonl(fixture.replace(/"prevHash":"0a46f7b[^\"]+"/, '"prevHash":"bad"')),
+    /Line 2 has prevHash mismatch/
+  );
+});
+
+test("rejects canonical record hash mismatches with physical line numbers", () => {
+  const fixture = readFileSync("tests/fixtures/runledger.v1.jsonl", "utf8");
+  assert.throws(() => parseJsonl(fixture.replace(/"hash":"[^"]+"/, '"hash":"bad"')), /Line 1 has hash mismatch/);
+});
+
 test("rejects malformed command arrays", () => {
   for (const command of [[], ["npm", ""], ["npm", 1]]) {
     assert.throws(() => parseJsonl(JSON.stringify({ command, exitCode: 0, signal: null })), /missing command/);
