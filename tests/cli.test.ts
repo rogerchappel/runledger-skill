@@ -73,6 +73,18 @@ test("rejects unknown commands with actionable guidance", () => {
   assert.equal(result.stdout, "");
 });
 
+for (const command of ["summarize", "check"]) {
+  test(`${command} rejects an invalid canonical ledger before producing a handoff`, () => {
+    const directory = mkdtempSync(join(tmpdir(), "runledger-cli-test-"));
+    const ledger = join(directory, "runs.jsonl");
+    writeFileSync(ledger, '{"schema":"runledger.v1","hash":"bad","prevHash":"bad","command":["npm","test"],"exitCode":0}\n');
+    const result = run(command, ledger, "--format", "json");
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /Line 1 has prevHash mismatch/);
+    assert.equal(result.stdout, "");
+  });
+}
+
 for (const helpCommand of [[], ["help"], ["--help"], ["-h"]]) {
   test(`prints help successfully for ${helpCommand[0] ?? "no command"}`, () => {
     const result = run(...helpCommand);
