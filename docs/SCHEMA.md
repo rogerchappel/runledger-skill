@@ -50,6 +50,15 @@ Unknown canonical fields are ignored, allowing an unmodified `runledger.v1`
 JSONL file to be consumed. An executable cross-package fixture lives at
 `tests/fixtures/runledger.v1.jsonl`.
 
+Canonical records are integrity-validated before a report is produced. The
+first `prevHash` must be 64 zeroes, each later `prevHash` must equal the prior
+record's `hash`, and every `hash` must be the SHA-256 of the stable,
+key-sorted JSON record with the `hash` field omitted. Records containing any
+of `schema`, `hash`, or `prevHash` must provide all three and use
+`schema: "runledger.v1"`. Malformed schema and chain or record-hash mismatches
+are rejected with the physical JSONL line number; `summarize` and `check`
+produce no handoff from an untrusted canonical ledger.
+
 ## Policy Config
 
 `--config` accepts a small JSON file:

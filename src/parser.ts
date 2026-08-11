@@ -1,6 +1,39 @@
 import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { hasSecretLikeValue, markRedacted, redact } from "./redact.js";
 import type { RunRecord } from "./types.js";
+
+const GENESIS_HASH = "0".repeat(64);
+
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  const entries = Object.entries(value as Record<string, unknown>)
+    .filter(([, item]) => item !== undefined)
+    .sort(([left], [right]) => left.localeCompare(right));
+  return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${stableStringify(item)}`).join(",")}}`;
+}
+
+function recordHash(raw: Record<string, unknown>): string {
+  const { hash: _hash, ...payload } = raw;
+  return createHash("sha256").update(stableStringify(payload)).digest("hex");
+}
+
+function validateCanonical(raw: Record<string, unknown>, line: number, expectedPrev: string): string | undefined {
+  const isCanonical = "schema" in raw || "hash" in raw || "prevHash" in raw;
+  if (!isCanonical) return undefined;
+  if (raw.schema !== "runledger.v1" || typeof raw.hash !== "string" || typeof raw.prevHash !== "string") {
+    throw new Error(`Line ${line} is not a valid runledger.v1 record; expected schema, hash, and prevHash`);
+  }
+  if (raw.prevHash !== expectedPrev) {
+    throw new Error(`Line ${line} has prevHash mismatch; expected ${expectedPrev}, got ${raw.prevHash}`);
+  }
+  const actual = recordHash(raw);
+  if (raw.hash !== actual) {
+    throw new Error(`Line ${line} has hash mismatch; expected ${actual}, got ${raw.hash}`);
+  }
+  return raw.hash;
+}
 
 function asRecord(value: unknown, line: number): RunRecord {
   if (!value || typeof value !== "object") {
@@ -59,6 +92,7 @@ function normalizeCommand(value: unknown): string | undefined {
 }
 
 export function parseJsonl(text: string): RunRecord[] {
+  let expectedPrev = GENESIS_HASH;
   return text
     .split(/\r?\n/)
     .map((line, index) => ({ line: line.trim(), lineNumber: index + 1 }))
@@ -71,6 +105,11 @@ export function parseJsonl(text: string): RunRecord[] {
         const detail = error instanceof Error ? `: ${error.message}` : "";
         throw new Error(`Line ${lineNumber} contains malformed JSON${detail}`);
       }
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        return asRecord(value, lineNumber);
+      }
+      const canonicalHash = validateCanonical(value as Record<string, unknown>, lineNumber, expectedPrev);
+      if (canonicalHash !== undefined) expectedPrev = canonicalHash;
       return asRecord(value, lineNumber);
     });
 }
