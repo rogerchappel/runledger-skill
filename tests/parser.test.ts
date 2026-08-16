@@ -13,12 +13,23 @@ test("parses JSONL run records", () => {
 
 test("parses canonical runledger.v1 records and normalizes argv commands", () => {
   const records = parseJsonl(readFileSync("tests/fixtures/runledger.v1.jsonl", "utf8"));
-  assert.equal(records[0].command, "node -e console.log('fixture ok')");
+  assert.equal(records[0].command, `node -e 'console.log('"'"'fixture ok'"'"')'`);
   assert.equal(records[0].exitCode, 0);
   assert.equal(records[0].signal, null);
-  assert.equal(records[1].command, "node -e process.kill(process.pid, 'SIGTERM')");
+  assert.equal(records[1].command, `node -e 'process.kill(process.pid, '"'"'SIGTERM'"'"')'`);
   assert.equal(records[1].exitCode, null);
   assert.equal(records[1].signal, "SIGTERM");
+});
+
+test("renders canonical argv without collapsing argument boundaries", () => {
+  const records = parseJsonl([
+    JSON.stringify({ command: ["node", "-e", 'console.log("a b")'], exitCode: 0 }),
+    JSON.stringify({ command: ["node", "-e", 'console.log("a', 'b")'], exitCode: 0 })
+  ].join("\n"));
+
+  assert.equal(records[0].command, `node -e 'console.log("a b")'`);
+  assert.equal(records[1].command, `node -e 'console.log("a' 'b")'`);
+  assert.notEqual(records[0].command, records[1].command);
 });
 
 test("rejects malformed canonical schema with a physical line number", () => {

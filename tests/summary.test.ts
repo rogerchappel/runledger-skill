@@ -25,7 +25,7 @@ test("flags missing required commands", () => {
 test("matches normalized runledger.v1 commands and reports signal failures", () => {
   const records = parseJsonl(readFileSync("tests/fixtures/runledger.v1.jsonl", "utf8"));
   const summary = summarize("fixture", records, {
-    requiredCommands: ["node -e console.log('fixture ok')"],
+    requiredCommands: [`node -e 'console.log('"'"'fixture ok'"'"')'`],
     failOn: "error"
   });
 
@@ -34,6 +34,30 @@ test("matches normalized runledger.v1 commands and reports signal failures", () 
   assert.equal(summary.findings.some(({ code }) => code === "missing-required-command"), false);
   assert.match(summary.findings.find(({ code }) => code === "command-failed")?.message ?? "", /SIGTERM/);
   assert.match(renderMarkdown(summary), /signal: SIGTERM/);
+});
+
+test("only the exact canonical argv rendering satisfies a requirement", () => {
+  const exact = `node -e 'console.log("a b")'`;
+  const split = parseJsonl(JSON.stringify({
+    command: ["node", "-e", 'console.log("a', 'b")'],
+    exitCode: 0
+  }));
+
+  const summary = summarize("fixture", split, { requiredCommands: [exact], failOn: "warning" });
+  assert.equal(summary.findings.some(({ code }) => code === "missing-required-command"), true);
+
+  const matching = parseJsonl(JSON.stringify({ command: ["node", "-e", 'console.log("a b")'], exitCode: 0 }));
+  const matchingSummary = summarize("fixture", matching, { requiredCommands: [exact], failOn: "warning" });
+  assert.equal(matchingSummary.findings.some(({ code }) => code === "missing-required-command"), false);
+});
+
+test("keeps compact string command matching unchanged", () => {
+  const records = parseJsonl(JSON.stringify({ command: `node -e console.log("a b")`, exitCode: 0 }));
+  const summary = summarize("fixture", records, {
+    requiredCommands: [`node -e console.log("a b")`],
+    failOn: "warning"
+  });
+  assert.equal(summary.findings.some(({ code }) => code === "missing-required-command"), false);
 });
 
 test("renders markdown report", () => {

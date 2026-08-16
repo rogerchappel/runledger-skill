@@ -34,7 +34,13 @@ Each line is one command run:
 The compact shape above and canonical `runledger.v1` records are accepted. In
 canonical records, `command` is an argv array such as `["npm", "test"]`; it is
 normalized deterministically to `npm test` for reports and `--require`
-matching. A numeric `exitCode` is passed only when it is zero. A null
+matching. Each argv element keeps its boundary: simple elements remain
+unquoted, while other elements use POSIX single-quote notation (with an
+embedded `'` rendered as `'"'"'`). For example,
+`["node", "-e", "console.log(\"a b\")"]` becomes
+`node -e 'console.log("a b")'` and must be required with that exact string.
+Compact string commands are preserved and matched exactly after trimming, so
+their existing `--require` values remain compatible. A numeric `exitCode` is passed only when it is zero. A null
 `exitCode` must have a non-empty `signal` and is reported as failed. See
 [`docs/SCHEMA.md`](docs/SCHEMA.md) for the full compatibility contract and the
 fixture in `tests/fixtures/runledger.v1.jsonl` for executable examples.
