@@ -37,10 +37,22 @@ Canonical `runledger.v1` output uses an argv array and nullable process status:
 {"schema":"runledger.v1","command":["npm","test"],"exitCode":null,"signal":"SIGTERM","stdout":"","stderr":"terminated"}
 ```
 
-Command arrays are joined with one ASCII space, in their original order. Thus
-`["npm", "test"]` becomes `npm test` in reports and matches
-`--require "npm test"`. This normalization is for display and matching; the
-skill does not execute or shell-quote the command.
+Command arrays use a deterministic, boundary-preserving display form in their
+original order. Elements containing only ASCII letters, digits, or
+`_@%+=:,./-` are emitted unchanged. Every other element is enclosed in POSIX
+single quotes; an embedded `'` is emitted as `'"'"'`. Elements are separated
+by one ASCII space. Thus `["npm", "test"]` becomes `npm test`, while
+`["node", "-e", "console.log(\"a b\")"]` becomes
+`node -e 'console.log("a b")'`. The distinct argv
+`["node", "-e", "console.log(\"a", "b\")"]` becomes
+`node -e 'console.log("a' 'b")'` and cannot satisfy the first command's
+requirement.
+
+`requiredCommands` and `--require` match the rendered command string exactly.
+Use the displayed boundary-preserving form for canonical argv records. Compact
+string commands are not interpreted or rewritten beyond trimming leading and
+trailing whitespace, preserving existing string-ledger requirements. The
+display notation is unambiguous but is not executed by this skill.
 
 An exit code of zero with no signal is passed. A non-zero exit code or a
 non-empty signal is failed. When `exitCode` is null, `signal` must be a
