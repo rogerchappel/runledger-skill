@@ -88,7 +88,12 @@ function normalizeCommand(value: unknown): string | undefined {
   if (!Array.isArray(value) || value.length === 0 || value.some((part) => typeof part !== "string" || part === "")) {
     return undefined;
   }
-  return value.join(" ");
+  return value.map(renderArg).join(" ");
+}
+
+function renderArg(value: string): string {
+  if (/^[A-Za-z0-9_@%+=:,./-]+$/.test(value)) return value;
+  return `'${value.replaceAll("'", `'"'"'`)}'`;
 }
 
 export function parseJsonl(text: string): RunRecord[] {
