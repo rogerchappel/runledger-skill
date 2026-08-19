@@ -23,6 +23,12 @@ The config file must contain `requiredCommands` as an array of non-empty strings
 and `failOn` as `info`, `warning`, or `error`. Invalid or malformed config files
 produce a nonzero exit before a report is written.
 
+Markdown reports preserve the canonical command text while escaping table and
+inline-code delimiters for display. Pipes, backticks, and line breaks in the
+source, commands, evidence, or findings cannot add columns, code spans, list
+items, or other report structure. Line breaks display as spaces. This rendering
+does not alter exact `--require` command matching or JSON report values.
+
 ## JSONL Schema
 
 Each line is one command run:
