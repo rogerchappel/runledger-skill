@@ -68,6 +68,35 @@ test("renders markdown report", () => {
   assert.match(renderMarkdown(summary), /npm test/);
 });
 
+test("keeps compact and argv commands inside one readable markdown table cell", () => {
+  const records = parseJsonl([
+    JSON.stringify({ command: "printf `left|right`\nnext", exitCode: 0, stdout: "line|one\nline `two`" }),
+    JSON.stringify({ command: ["node", "-e", "console.log(`a|b`)"], exitCode: 0, stdout: "ok" })
+  ].join("\n"));
+  const summary = summarize("ledger|`source`\nname", records, {
+    requiredCommands: [records[0].command, records[1].command],
+    failOn: "error"
+  });
+
+  const markdown = renderMarkdown(summary);
+  assert.match(markdown, /Source: ``ledger\|`source` name``/);
+  assert.match(markdown, /\| ``printf `left\\\|right` next`` \| 0 \| 0ms \| line\\\|one line \\`two\\` \|/);
+  assert.match(markdown, /\| ``node -e 'console\.log\(`a\\\|b`\)'`` \| 0 \| 0ms \| ok \|/);
+  assert.equal(markdown.split("\n").filter((line) => line.startsWith("| ``")).length, 2);
+  assert.equal(summary.findings.some(({ code }) => code === "missing-required-command"), false);
+});
+
+test("escapes markdown control delimiters in finding text and commands", () => {
+  const command = "check `value|other`\nnext";
+  const summary = summarize("fixture", [], { requiredCommands: [command], failOn: "warning" });
+  const markdown = renderMarkdown(summary);
+
+  assert.match(markdown, /Missing required command: check \\`value\|other\\` next/);
+  assert.match(markdown, /\(``check `value\|other` next``\)/);
+  assert.equal(markdown.split("\n").filter((line) => line.startsWith("- **error**")).length, 1);
+  assert.equal(renderJson(summary), `${JSON.stringify(summary, null, 2)}\n`);
+});
+
 test("matches clean expected report fixture", () => {
   const summary = summarize("examples/clean-runs.jsonl", [
     { command: "npm test", exitCode: 0, durationMs: 100, stdout: "ok" },
