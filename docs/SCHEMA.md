@@ -23,6 +23,12 @@
 | `notes` | string | Human or agent notes. Secret-like values are redacted. |
 | `signal` | string or null | Termination signal. A non-empty signal is required when `exitCode` is null. |
 
+Every present optional field must match its declared type. Wrong-typed values
+are rejected with the physical JSONL line number and field name; they are not
+silently discarded. Omitted fields remain optional, and `signal` may be null
+when a numeric `exitCode` is present. Both `summarize` and `check` stop before
+writing a report when a record is malformed.
+
 ## Compatible Record Shapes
 
 The compact shape uses a string command and numeric exit code:
