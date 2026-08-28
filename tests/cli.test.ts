@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -91,5 +91,21 @@ for (const helpCommand of [[], ["help"], ["--help"], ["-h"]]) {
     assert.equal(result.status, 0);
     assert.match(result.stdout, /Usage:/);
     assert.equal(result.stderr, "");
+  });
+}
+
+for (const command of ["summarize", "check"]) {
+  test(`${command} emits no report for malformed optional fields`, () => {
+    const directory = mkdtempSync(join(tmpdir(), "runledger-cli-test-"));
+    const ledger = join(directory, "malformed.jsonl");
+    const report = join(directory, "report.json");
+    writeFileSync(ledger, '{"command":"npm test","exitCode":0,"stdout":{"ok":true}}\n');
+
+    const result = run(command, ledger, "--format", "json", "--out", report);
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /Line 1 has invalid stdout/);
+    assert.equal(result.stdout, "");
+    assert.equal(existsSync(report), false);
   });
 }
