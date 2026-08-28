@@ -37,6 +37,10 @@ Each line is one command run:
 {"command":"npm test","exitCode":0,"durationMs":1240,"stdout":"ok","outputPath":"artifacts/test.log"}
 ```
 
+Present optional fields are type-checked against [the ledger schema](docs/SCHEMA.md).
+Malformed records identify the physical line and field and cannot produce a
+`summarize` or `check` report.
+
 The compact shape above and canonical `runledger.v1` records are accepted. In
 canonical records, `command` is an argv array such as `["npm", "test"]`; it is
 normalized deterministically to `npm test` for reports and `--require`
