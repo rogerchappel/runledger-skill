@@ -121,6 +121,32 @@ test("redacts secret-like values while parsing", () => {
   assert.equal(wasRedacted(records[0]), true);
 });
 
+test("rejects wrong-typed optional fields with their physical line and field", () => {
+  const invalid = [
+    ["cwd", 42],
+    ["startedAt", 42],
+    ["endedAt", false],
+    ["durationMs", "10"],
+    ["stdout", { ok: true }],
+    ["stderr", ["bad"]],
+    ["outputPath", 99],
+    ["notes", ["verified"]],
+    ["signal", 9]
+  ] as const;
+
+  for (const [field, value] of invalid) {
+    const text = `\n\n{"command":"ok","exitCode":0,"${field}":${JSON.stringify(value)}}\n`;
+    assert.throws(() => parseJsonl(text), new RegExp(`Line 3 has invalid ${field}`));
+  }
+});
+
+test("accepts omitted and null optional fields", () => {
+  const record = parseJsonl('{"command":"ok","exitCode":0,"signal":null}\n')[0];
+  assert.equal(record.cwd, undefined);
+  assert.equal(record.durationMs, undefined);
+  assert.equal(record.signal, null);
+});
+
 test("does not mark clean records as redacted", () => {
   const records = parseJsonl('{"command":"check","exitCode":0,"stdout":"clean output"}\n');
   assert.equal(wasRedacted(records[0]), false);
