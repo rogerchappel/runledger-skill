@@ -56,6 +56,11 @@ function asRecord(value: unknown, line: number): RunRecord {
   if (raw.exitCode === null && (typeof raw.signal !== "string" || raw.signal.trim() === "")) {
     throw new Error(`Line ${line} with null exitCode requires a signal`);
   }
+  for (const field of ["cwd", "startedAt", "endedAt", "stdout", "stderr", "outputPath", "notes"] as const) {
+    if (raw[field] !== undefined && typeof raw[field] !== "string") {
+      throw new Error(`Line ${line} has invalid ${field}; expected a string`);
+    }
+  }
   if (
     raw.durationMs !== undefined &&
     (typeof raw.durationMs !== "number" || !Number.isFinite(raw.durationMs) || raw.durationMs < 0)
