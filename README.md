@@ -54,6 +54,10 @@ their existing `--require` values remain compatible. A numeric `exitCode` is pas
 `exitCode` must have a non-empty `signal` and is reported as failed. See
 [`docs/SCHEMA.md`](docs/SCHEMA.md) for the full compatibility contract and the
 fixture in `tests/fixtures/runledger.v1.jsonl` for executable examples.
+Canonical producer fields are validated before reporting, including timestamps,
+elapsed duration, status/result consistency, evidence strings, identifiers, and
+the redaction flag. `finishedAt` is retained as `endedAt` in the normalized
+report shape. Compact records keep the optional-field contract described above.
 
 ## Safety Model
 
