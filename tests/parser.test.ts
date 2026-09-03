@@ -1,8 +1,44 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { parseJsonl } from "../src/parser.js";
 import { wasRedacted } from "../src/redact.js";
+
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  return `{${Object.entries(value as Record<string, unknown>)
+    .filter(([, item]) => item !== undefined)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, item]) => `${JSON.stringify(key)}:${stableStringify(item)}`)
+    .join(",")}}`;
+}
+
+function canonical(overrides: Record<string, unknown> = {}): string {
+  const record: Record<string, unknown> = {
+    schema: "runledger.v1",
+    id: "fixture-record",
+    command: ["npm", "test"],
+    cwd: "/tmp/project",
+    startedAt: "2026-05-08T08:00:00.000Z",
+    finishedAt: "2026-05-08T08:00:01.000Z",
+    durationMs: 1000,
+    exitCode: 0,
+    signal: null,
+    status: "passed",
+    stdout: "ok\n",
+    stderr: "",
+    redacted: false,
+    prevHash: "0".repeat(64),
+    ...overrides
+  };
+  for (const [key, value] of Object.entries(record)) {
+    if (value === undefined) delete record[key];
+  }
+  record.hash = createHash("sha256").update(stableStringify(record)).digest("hex");
+  return JSON.stringify(record);
+}
 
 test("parses JSONL run records", () => {
   const records = parseJsonl('{"command":"npm test","exitCode":0,"stdout":"ok"}\n');
@@ -16,9 +52,45 @@ test("parses canonical runledger.v1 records and normalizes argv commands", () =>
   assert.equal(records[0].command, `node -e 'console.log('"'"'fixture ok'"'"')'`);
   assert.equal(records[0].exitCode, 0);
   assert.equal(records[0].signal, null);
+  assert.equal(records[0].endedAt, "2026-05-08T08:00:01.000Z");
   assert.equal(records[1].command, `node -e 'process.kill(process.pid, '"'"'SIGTERM'"'"')'`);
   assert.equal(records[1].exitCode, null);
   assert.equal(records[1].signal, "SIGTERM");
+});
+
+test("rejects malformed required canonical fields", () => {
+  const invalid = [
+    ["finishedAt", 123],
+    ["startedAt", null],
+    ["cwd", 42],
+    ["status", "unknown"],
+    ["stdout", null],
+    ["stderr", []],
+    ["redacted", "false"],
+    ["id", 9],
+    ["command", "npm test"]
+  ] as const;
+  for (const [field, value] of invalid) {
+    assert.throws(() => parseJsonl(canonical({ [field]: value })), new RegExp(`Line 1 has invalid ${field}`));
+  }
+  assert.throws(() => parseJsonl(canonical({ finishedAt: undefined })), /Line 1 has invalid finishedAt/);
+});
+
+test("rejects invalid canonical timestamps and inconsistent timing", () => {
+  assert.throws(() => parseJsonl(canonical({ finishedAt: "not-a-date" })), /invalid finishedAt/);
+  assert.throws(
+    () => parseJsonl(canonical({ startedAt: "2026-05-08T08:00:02.000Z" })),
+    /finishedAt precedes startedAt/
+  );
+  assert.throws(() => parseJsonl(canonical({ durationMs: 1001 })), /durationMs exceeds elapsed time/);
+});
+
+test("rejects canonical result fields inconsistent with status", () => {
+  assert.throws(() => parseJsonl(canonical({ status: "failed" })), /status does not match exitCode and signal/);
+  assert.throws(
+    () => parseJsonl(canonical({ exitCode: 1, status: "passed" })),
+    /status does not match exitCode and signal/
+  );
 });
 
 test("renders canonical argv without collapsing argument boundaries", () => {

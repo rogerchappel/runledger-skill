@@ -43,6 +43,15 @@ Canonical `runledger.v1` output uses an argv array and nullable process status:
 {"schema":"runledger.v1","command":["npm","test"],"exitCode":null,"signal":"SIGTERM","stdout":"","stderr":"terminated"}
 ```
 
+Canonical records require the producer fields `id`, `command`, `cwd`,
+`startedAt`, `finishedAt`, `durationMs`, `exitCode`, `signal`, `status`,
+`stdout`, `stderr`, and `redacted`, in addition to the integrity fields.
+`startedAt` and `finishedAt` must be valid timestamps in chronological order,
+and `durationMs` cannot exceed their elapsed interval. `status` is `passed`
+only for exit code zero without a signal; all other results are `failed`.
+The canonical `finishedAt` value is exposed as `endedAt` in generated reports
+so canonical and compact records share one report shape.
+
 Command arrays use a deterministic, boundary-preserving display form in their
 original order. Elements containing only ASCII letters, digits, or
 `_@%+=:,./-` are emitted unchanged. Every other element is enclosed in POSIX
@@ -65,7 +74,8 @@ non-empty signal is failed. When `exitCode` is null, `signal` must be a
 non-empty string so termination cannot be mistaken for success. Missing,
 negative, fractional, or otherwise malformed exit codes remain rejected.
 Unknown canonical fields are ignored, allowing an unmodified `runledger.v1`
-JSONL file to be consumed. An executable cross-package fixture lives at
+JSONL file to be consumed. Required canonical fields are validated before
+mapping; wrong-typed or inconsistent values are never silently dropped. An executable cross-package fixture lives at
 `tests/fixtures/runledger.v1.jsonl`.
 
 Canonical records are integrity-validated before a report is produced. The
