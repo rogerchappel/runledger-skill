@@ -32,7 +32,37 @@ function validateCanonical(raw: Record<string, unknown>, line: number, expectedP
   if (raw.hash !== actual) {
     throw new Error(`Line ${line} has hash mismatch; expected ${actual}, got ${raw.hash}`);
   }
+  validateCanonicalFields(raw, line);
   return raw.hash;
+}
+
+function validateCanonicalFields(raw: Record<string, unknown>, line: number): void {
+  if (!Array.isArray(raw.command) || raw.command.length === 0 || raw.command.some((part) => typeof part !== "string" || part === "")) {
+    throw new Error(`Line ${line} has invalid command; expected a non-empty string array`);
+  }
+  for (const field of ["id", "cwd", "startedAt", "finishedAt", "stdout", "stderr"] as const) {
+    if (typeof raw[field] !== "string" || (field !== "stdout" && field !== "stderr" && raw[field].trim() === "")) {
+      throw new Error(`Line ${line} has invalid ${field}; expected ${field === "stdout" || field === "stderr" ? "a string" : "a non-empty string"}`);
+    }
+  }
+  if (raw.status !== "passed" && raw.status !== "failed") {
+    throw new Error(`Line ${line} has invalid status; expected passed or failed`);
+  }
+  if (typeof raw.redacted !== "boolean") {
+    throw new Error(`Line ${line} has invalid redacted; expected a boolean`);
+  }
+  const started = Date.parse(raw.startedAt as string);
+  const finished = Date.parse(raw.finishedAt as string);
+  if (!Number.isFinite(started)) throw new Error(`Line ${line} has invalid startedAt; expected a timestamp`);
+  if (!Number.isFinite(finished)) throw new Error(`Line ${line} has invalid finishedAt; expected a timestamp`);
+  if (finished < started) throw new Error(`Line ${line} finishedAt precedes startedAt`);
+  if (typeof raw.durationMs === "number" && raw.durationMs > finished - started) {
+    throw new Error(`Line ${line} durationMs exceeds elapsed time between startedAt and finishedAt`);
+  }
+  const passed = raw.exitCode === 0 && (raw.signal === null || raw.signal === undefined);
+  if ((raw.status === "passed") !== passed) {
+    throw new Error(`Line ${line} status does not match exitCode and signal`);
+  }
 }
 
 function asRecord(value: unknown, line: number): RunRecord {
@@ -76,7 +106,9 @@ function asRecord(value: unknown, line: number): RunRecord {
     exitCode: raw.exitCode as number | null,
     signal: typeof raw.signal === "string" ? raw.signal.trim() : raw.signal === null ? null : undefined,
     startedAt: typeof raw.startedAt === "string" ? raw.startedAt : undefined,
-    endedAt: typeof raw.endedAt === "string" ? raw.endedAt : undefined,
+    endedAt: typeof raw.finishedAt === "string"
+      ? raw.finishedAt
+      : typeof raw.endedAt === "string" ? raw.endedAt : undefined,
     durationMs: raw.durationMs,
     stdout: redact(stdout),
     stderr: redact(stderr),
