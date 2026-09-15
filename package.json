@@ -4,7 +4,7 @@
   "description": "Agent skill and CLI for turning command-run ledgers into verification handoffs.",
   "type": "module",
   "bin": {
-    "runledger-skill": "./dist/src/cli.js"
+    "runledger-skill": "./dist/cli.js"
   },
   "files": [
     "dist",
